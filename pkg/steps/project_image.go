@@ -50,10 +50,12 @@ func (s *projectDirectoryImageBuildStep) Run(ctx context.Context, dry bool) erro
 
 	labels := make(map[string]string)
 	if len(s.jobSpec.Refs.Pulls) == 0 {
-		labels["io.openshift.build.commit.id"] = s.jobSpec.Refs.BaseSHA
+		labels["org.opencontainers.image.source"] = fmt.Sprintf("https://github.com/%s/%s", s.jobSpec.Refs.Org, s.jobSpec.Refs.Repo)
+		labels["org.opencontainers.image.revision"] = s.jobSpec.Refs.BaseSHA
 		labels["io.openshift.build.commit.ref"] = s.jobSpec.Refs.BaseRef
 	} else {
-		labels["io.openshift.build.commit.id"] = ""
+		labels["org.opencontainers.image.source"] = ""
+		labels["org.opencontainers.image.revision"] = ""
 		labels["io.openshift.build.commit.ref"] = ""
 	}
 
