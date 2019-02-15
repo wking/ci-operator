@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -27,6 +28,8 @@ type JobSpec struct {
 	// these fields allow the job to be targeted at a location
 	Namespace     string
 	BaseNamespace string
+
+	GracePeriod *time.Duration
 
 	// if set, any new artifacts will be a child of this object
 	owner *meta.OwnerReference

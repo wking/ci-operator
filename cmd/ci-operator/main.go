@@ -191,6 +191,7 @@ type options struct {
 	extraInputHash      stringSlice
 	idleCleanupDuration time.Duration
 	cleanupDuration     time.Duration
+	graceDuration       time.Duration
 
 	inputHash     string
 	secrets       []*coreapi.Secret
@@ -207,6 +208,7 @@ func bindOptions(flag *flag.FlagSet) *options {
 	opt := &options{
 		idleCleanupDuration: time.Duration(1 * time.Hour),
 		cleanupDuration:     time.Duration(12 * time.Hour),
+		graceDuration:       time.Duration(coreapi.DefaultTerminationGracePeriodSeconds * time.Second),
 	}
 
 	// command specific options
@@ -229,6 +231,7 @@ func bindOptions(flag *flag.FlagSet) *options {
 	flag.StringVar(&opt.baseNamespace, "base-namespace", "stable", "Namespace to read builds from, defaults to stable.")
 	flag.DurationVar(&opt.idleCleanupDuration, "delete-when-idle", opt.idleCleanupDuration, "If no pod is running for longer than this interval, delete the namespace. Set to zero to retain the contents. Requires the namespace TTL controller to be deployed.")
 	flag.DurationVar(&opt.cleanupDuration, "delete-after", opt.cleanupDuration, "If namespace exists for longer than this interval, delete the namespace. Set to zero to retain the contents. Requires the namespace TTL controller to be deployed.")
+	flag.DurationVar(&opt.graceDuration, "grace-period", opt.graceDuration, "Interval to wait after requesting pod termination before killing the pod.  ci-operator itself will wait an additional 30 seconds to try and receive the successful deletion response.")
 
 	// actions to add to the graph
 	flag.BoolVar(&opt.promote, "promote", false, "When all other targets complete, publish the set of images built by this job into the release configuration.")
@@ -296,6 +299,7 @@ func (o *options) Complete() error {
 		jobSpec.Refs = spec.Refs
 	}
 	jobSpec.BaseNamespace = o.baseNamespace
+	jobSpec.GracePeriod = &o.graceDuration
 	o.jobSpec = jobSpec
 
 	if o.dry && o.verbose {
@@ -392,9 +396,10 @@ func (o *options) Run() error {
 		if o.dry {
 			os.Exit(0)
 		}
-		log.Printf("error: Process interrupted with signal %s, exiting in 2s ...", s)
+		duration := o.graceDuration + 30*time.Second
+		log.Printf("error: Process interrupted with signal %s, exiting in %v ...", s, duration)
 		cancel()
-		time.Sleep(2 * time.Second)
+		time.Sleep(duration)
 		os.Exit(1)
 	}
 

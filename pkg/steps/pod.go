@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"path/filepath"
 
 	coreapi "k8s.io/api/core/v1"
@@ -93,7 +94,12 @@ func (s *podStep) Run(ctx context.Context, dry bool) error {
 		<-ctx.Done()
 		notifier.Cancel()
 		log.Printf("cleanup: Deleting %s pod %s", s.name, s.config.As)
-		if err := s.podClient.Pods(s.jobSpec.Namespace).Delete(s.config.As, nil); err != nil && !errors.IsNotFound(err) {
+		opts := &meta.DeleteOptions{}
+		if s.jobSpec.GracePeriod != nil {
+			sec := int64(math.Ceil(s.jobSpec.GracePeriod.Seconds()))
+			opts.GracePeriodSeconds = &sec
+		}
+		if err := s.podClient.Pods(s.jobSpec.Namespace).Delete(s.config.As, opts); err != nil && !errors.IsNotFound(err) {
 			log.Printf("error: Could not delete %s pod: %v", s.name, err)
 		}
 	}()
