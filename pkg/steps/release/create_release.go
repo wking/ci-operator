@@ -158,8 +158,7 @@ func (s *assembleReleaseStep) Run(ctx context.Context, dry bool) error {
 	destination := fmt.Sprintf("%s:%s", release.Status.PublicDockerImageRepository, tag)
 	log.Printf("Create release image %s", destination)
 	podConfig := steps.PodStepConfiguration{
-		SkipLogs: true,
-		As:       fmt.Sprintf("release-%s", tag),
+		As: fmt.Sprintf("release-%s", tag),
 		From: api.ImageStreamTagReference{
 			Name: streamName,
 			Tag:  "cli",
